@@ -56,6 +56,22 @@ async function run() {
             console.log('Billing details read successfully...');
         });
 
+        // search billings details
+        app.get("/api/search/:key", async (req, res) => {
+            const full_name = req.params.key;
+            const email = req.params.key;
+            const phone = req.params.key;
+            const query = {
+                "$or": [
+                    {full_name: {$regex: full_name}},
+                    {email: {$regex: email}},
+                    {phone: {$regex: phone}}
+                ]
+            };
+            const billings = await billingsCollection.find(query).toArray();
+            res.send(billings);
+        });
+
         // update billing details
         app.put('/api/update-billing/:id', async (req, res) => {
             const id = req.params.id;
