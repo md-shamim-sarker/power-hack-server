@@ -20,68 +20,69 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         const usersCollection = client.db('power-hack').collection('users');
+        const billingsCollection = client.db('power-hack').collection('billings');
 
         // post user by registration
         app.post('/api/registration', async (req, res) => {
             const user = req.body;
-            const result = await collection.insertOne(user);
+            const result = await usersCollection.insertOne(user);
             res.send(result);
-            console.log('Data added successfully...');
+            console.log('User added successfully...');
         });
 
         // read user for login
         app.get('/api/login', async (req, res) => {
             const query = {};
-            const cursor = collection.find(query);
+            const cursor = usersCollection.find(query);
             const users = await cursor.toArray();
             res.send(users);
+            console.log('User read successfully...');
         });
 
-        // // R from CRUD (find by id)
-        // app.get('/users/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = {_id: ObjectId(id)};
-        //     const user = await collection.findOne(query);
-        //     res.send(user);
-        // });
+        // post billings details
+        app.post('/api/add-billing', async (req, res) => {
+            const billing = req.body;
+            const result = await billingsCollection.insertOne(billing);
+            res.send(result);
+            console.log('Billing details added successfully...');
+        });
 
-        // // R from CRUD (using query parameters)
-        // // http://localhost:5000/usrs?firstName=Shamim (query parameter format)
-        // app.get('/usrs', async (req, res) => {
-        //     let query = {};
-        //     if(req.query.firstName) {
-        //         query = {
-        //             firstName: req.query.firstName
-        //         };
-        //     }
-        //     const cursor = collection.find(query);
-        //     const usrs = await cursor.toArray();
-        //     res.send(usrs);
-        // });
+        // read billings details
+        app.get('/api/billing-list', async (req, res) => {
+            const query = {};
+            const cursor = billingsCollection.find(query);
+            const billings = await cursor.toArray();
+            res.send(billings);
+            console.log('Billing details read successfully...');
+        });
 
-        // // U from CRUD
-        // app.put('/users/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = {_id: ObjectId(id)};
-        //     const user = req.body;
-        //     const option = {upsert: true};
-        //     const updatedUser = {
-        //         $set: {
-        //             firstName: user.firstName,
-        //             lastName: user.lastName
-        //         }
-        //     };
-        //     const result = await collection.updateOne(filter, updatedUser, option);
-        //     res.send(result);
-        // });
+        // update billing details
+        app.put('/api/update-billing/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const billing = req.body;
+            const option = {upsert: true};
+            const updatedBilling = {
+                $set: {
+                    full_name: billing.full_name,
+                    email: billing.email,
+                    phone: billing.phone,
+                    paid_amount: billing.paid_amount
+                }
+            };
+            const result = await billingsCollection.updateOne(filter, updatedBilling, option);
+            res.send(result);
+            console.log('Billing details updated successfully...');
+        });
 
-        // // D from CRUD
-        // app.delete('/users/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = {_id: ObjectId(id)};
-        //     const result = await collection.deleteOne(query);
-        //     res.send(result);
-        // });
+        // delete billing details
+        app.delete('/api/delete-billing/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await billingsCollection.deleteOne(query);
+            res.send(result);
+            console.log('Billing details deleted successfully...');
+        });
 
     } catch(error) {
         console.log(error.message);
@@ -94,5 +95,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
 });
