@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const {MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
@@ -9,6 +10,21 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(cors());
 app.use(express.json());
+
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if(!authHeader) {
+        return res.status(401).send({message: 'Unauthorized Access'});
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
+        if(err) {
+            return res.status(401).send({message: 'Unauthorized Access'});
+        }
+        req.decoded = decoded;
+        next();
+    });
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.egsefuu.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -22,21 +38,36 @@ async function run() {
         const usersCollection = client.db('power-hack').collection('users');
         const billingsCollection = client.db('power-hack').collection('billings');
 
+        // JWT api
+        app.post("/jwt", (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+                expiresIn: '5h'
+            });
+            res.send({token});
+        });
+
         // post user by registration
         app.post('/api/registration', async (req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
             res.send(result);
-            console.log('User added successfully...');
+            // console.log('User added successfully...');
         });
 
-        // read user for login
-        app.get('/api/login', async (req, res) => {
-            const query = {};
-            const cursor = usersCollection.find(query);
-            const users = await cursor.toArray();
-            res.send(users);
-            console.log('User read successfully...');
+        // post user for login
+        app.post('/api/login', async (req, res) => {
+            const user = req.body;
+            const query = {
+                email: user.email,
+                password: user.password
+            };
+            const users = await usersCollection.findOne(query);
+            if(users !== null) {
+                res.send({status: "exist"});
+            } else {
+                res.send({status: "not_exist"});
+            }
         });
 
         // post billings details
@@ -44,25 +75,37 @@ async function run() {
             const billing = req.body;
             const result = await billingsCollection.insertOne(billing);
             res.send(result);
-            console.log('Billing details added successfully...');
+            // console.log('Billing details added successfully...');
         });
 
         // read billings details
         app.get('/api/billing-list', async (req, res) => {
             const query = {};
-            const cursor = billingsCollection.find(query);
+            const sort = {_id: -1};
+            const cursor = billingsCollection.find(query).sort(sort);
             const billings = await cursor.toArray();
             res.send(billings);
-            console.log('Billing details read successfully...');
+            // console.log('Billing details read successfully...');
+        });
+
+        // read billings details by id
+        app.get('/api/billing-id/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const billing = await billingsCollection.findOne(query);
+            res.send(billing);
+            // console.log('Billing details read by id successfully...');
         });
 
         // search billings details
         app.get("/api/search/:key", async (req, res) => {
+            const billing_id = req.params.key;
             const full_name = req.params.key;
             const email = req.params.key;
             const phone = req.params.key;
             const query = {
                 "$or": [
+                    {billing_id: {$regex: billing_id}},
                     {full_name: {$regex: full_name}},
                     {email: {$regex: email}},
                     {phone: {$regex: phone}}
@@ -97,7 +140,7 @@ async function run() {
             const query = {_id: ObjectId(id)};
             const result = await billingsCollection.deleteOne(query);
             res.send(result);
-            console.log('Billing details deleted successfully...');
+            // console.log('Billing details deleted successfully...');
         });
 
     } catch(error) {
