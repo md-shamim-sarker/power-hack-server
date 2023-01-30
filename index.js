@@ -52,7 +52,6 @@ async function run() {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
             res.send(result);
-            // console.log('User added successfully...');
         });
 
         // post user for login
@@ -75,7 +74,6 @@ async function run() {
             const billing = req.body;
             const result = await billingsCollection.insertOne(billing);
             res.send(result);
-            // console.log('Billing details added successfully...');
         });
 
         // read billings details
@@ -85,7 +83,6 @@ async function run() {
             const cursor = billingsCollection.find(query).sort(sort);
             const billings = await cursor.toArray();
             res.send(billings);
-            // console.log('Billing details read successfully...');
         });
 
         // read billings details by id
@@ -94,7 +91,6 @@ async function run() {
             const query = {_id: ObjectId(id)};
             const billing = await billingsCollection.findOne(query);
             res.send(billing);
-            // console.log('Billing details read by id successfully...');
         });
 
         // search billings details
@@ -140,7 +136,6 @@ async function run() {
             const query = {_id: ObjectId(id)};
             const result = await billingsCollection.deleteOne(query);
             res.send(result);
-            // console.log('Billing details deleted successfully...');
         });
 
     } catch(error) {
